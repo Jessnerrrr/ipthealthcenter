@@ -82,11 +82,13 @@
                         <div class="px-4 py-3 border-b border-gray-100">
                             <p class="text-sm text-gray-500">Signed in as</p>
                             <p class="text-sm font-bold text-gray-900 truncate">juan.delacruz@email.com</p>
-                        </div>
                         <a href="profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700">My Profile</a>
+                        
+                        <a href="my_appointments.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700">My Appointments</a>
+                        
                         <a href="settings.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700">Settings</a>
                         <div class="border-t border-gray-100 my-1"></div>
-                        <a href="logout.php" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">Sign out</a>
+                        <a href="#" onclick="logoutUser()" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md font-medium">Sign Out</a>
                     </div>
                 </div>
 
@@ -682,6 +684,18 @@
                 setTimeout(() => { userDropdown.classList.add('hidden'); }, 100);
             }
         }
+
+        // --- LOGOUT FUNCTION ---
+    function logoutUser() {
+        if(confirm("Are you sure you want to sign out?")) {
+            // 1. Clear any saved session data (if you have any)
+            localStorage.removeItem('userType'); 
+            localStorage.removeItem('isLoggedIn');
+            
+            // 2. Redirect to the Login Page or Home Page
+            window.location.href = "Homee.html"; // Change this to "login.html" if you have one
+        }
+    }
     </script>
 </body>
 </html>

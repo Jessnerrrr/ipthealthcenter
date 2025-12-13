@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Appointments - Barangay Bahay Toro Health Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        html { font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
+        #main-header { position: fixed; top: 0; width: 100%; transition: top 0.3s ease-in-out; z-index: 50; }
+        .modal { transition: opacity 0.25s ease; }
+        .modal-content { transition: transform 0.25s ease; }
+        body.modal-active { overflow: hidden; }
+        
+        /* Tab Styles */
+        .tab-active { border-bottom-width: 2px; border-color: #0d9488; color: #0f766e; }
+        .tab-inactive { border-bottom-width: 2px; border-color: transparent; color: #6b7280; }
+        .tab-inactive:hover { color: #374151; border-color: #d1d5db; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 pt-[72px]">
+
+    <header id="main-header" class="bg-white shadow-md">
+        <nav class="w-full px-4 lg:px-10 py-4 flex justify-between items-center">
+            <a href="Homee.html" class="flex items-center gap-3 text-xl md:text-2xl font-bold text-teal-700 flex-shrink-0">
+                <img src="Images/bbhlogo1-removebg-preview.png" alt="Logo" class="h-12 w-auto object-contain" onerror="this.src='https://placehold.co/50x50/teal/white?text=Logo'">
+                <span class="hidden sm:block">Barangay Bahay Toro Health Center</span>
+                <span class="sm:hidden">Bahay Toro HC</span>
+            </a>
+            
+            <div class="hidden lg:flex flex-grow justify-center gap-6 xl:gap-8 items-center">
+                <a href="Homee.html" class="font-medium text-gray-700 hover:text-teal-600 transition duration-200">Home</a>
+                <a href="about.html" class="font-medium text-gray-700 hover:text-teal-600 transition duration-200">About Us</a>
+                <a href="services.html" class="font-medium text-gray-700 hover:text-teal-600 transition duration-200">Services</a>
+                <a href="announcements.html" class="font-medium text-gray-700 hover:text-teal-600 transition duration-200">News</a>
+                <a href="contact.html" class="font-medium text-gray-700 hover:text-teal-600 transition duration-200">Contact</a>
+                <a href="faqs.html" class="font-medium text-gray-700 hover:text-teal-600 transition duration-200">FAQs</a>
+            </div>
+            
+            <div class="flex-shrink-0 flex gap-4 items-center">
+                <button class="open-appointment-modal bg-gradient-to-r from-teal-600 to-teal-700 text-white px-5 py-2 rounded-full font-semibold hover:from-teal-700 hover:to-teal-600 transition duration-300 text-sm md:text-base shadow-md">
+                    Book Now
+                </button>
+
+                <div class="relative hidden lg:block">
+                    <button type="button" id="user-menu-button" class="flex items-center justify-center rounded-full bg-teal-100 p-1 hover:ring-2 hover:ring-teal-500 transition focus:outline-none">
+                        <img class="h-9 w-9 rounded-full object-cover" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="User Profile">
+                    </button>
+                    <div id="user-dropdown-menu" class="hidden absolute right-0 z-50 mt-2 w-56 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none transform opacity-0 scale-95 transition ease-out duration-100">
+                        <div class="px-4 py-3 border-b border-gray-100">
+                            <p class="text-sm text-gray-500">Signed in as</p>
+                            <p class="text-sm font-bold text-gray-900 truncate">juan.delacruz@email.com</p>
+                        </div>
+                        <a href="profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700">My Profile</a>
+                        <a href="my_appointments.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700">My Appointments</a>
+                        <a href="settings.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700">Settings</a>
+                        <div class="border-t border-gray-100 my-1"></div>
+                       <a href="#" onclick="logoutUser()" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md font-medium">Sign Out</a>
+                    </div>
+                </div>
+
+                <button id="mobile-menu-toggle" class="lg:hidden text-gray-700 hover:text-teal-600 p-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path id="menu-icon-path" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                    </svg>
+                </button>
+            </div>
+        </nav>
+        <div id="mobile-menu" class="lg:hidden hidden bg-white w-full shadow-lg absolute top-full left-0 z-40 border-t border-gray-200">
+            <div class="flex flex-col p-4 gap-2">
+                <a href="Homee.html" class="block px-4 py-2 text-gray-700 hover:bg-teal-50 rounded-md font-medium">Home</a>
+                <a href="profile.html" class="block px-4 py-2 text-gray-700 hover:bg-teal-50 rounded-md font-medium">My Profile</a>
+                <a href="my_appointments.html" class="block px-4 py-2 text-teal-600 bg-teal-50 rounded-md font-medium">Appointments</a>
+                <a href="logout.php" class="block px-4 py-2 text-red-600 hover:bg-red-50 rounded-md font-medium">Sign Out</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-10 max-w-5xl">
+        
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">My Appointments</h1>
+                <p class="text-gray-500 mt-1">Manage your upcoming schedules and view history.</p>
+            </div>
+            <button class="open-appointment-modal flex items-center gap-2 bg-teal-600 text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-teal-700 transition shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Book New
+            </button>
+        </div>
+
+        <div class="flex flex-col sm:flex-row justify-between items-end sm:items-center border-b border-gray-200 mb-6 gap-4">
+            
+            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                <button onclick="switchAppTab('upcoming')" id="tab-btn-upcoming" class="tab-active whitespace-nowrap py-4 px-1 font-medium text-sm transition-colors">
+                    Upcoming
+                </button>
+                <button onclick="switchAppTab('history')" id="tab-btn-history" class="tab-inactive whitespace-nowrap py-4 px-1 font-medium text-sm transition-colors">
+                    History
+                </button>
+                <button onclick="switchAppTab('cancelled')" id="tab-btn-cancelled" class="tab-inactive whitespace-nowrap py-4 px-1 font-medium text-sm transition-colors">
+                    Cancelled
+                </button>
+            </nav>
+
+            <div class="pb-2">
+                <select id="status-filter" class="block w-full sm:w-48 pl-3 pr-10 py-2 text-sm border-gray-300 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm rounded-md border shadow-sm text-gray-700">
+                    <option value="all">Filter by Status</option>
+                    <option value="pending">Pending </option>
+                    <option value="approved">Approved </option>
+                </select>
+            </div>
+        </div>
+
+        <div id="appointments-container" class="space-y-4 min-h-[300px]">
+            </div>
+
+        <template id="empty-state-template">
+            <div class="text-center py-12 bg-white rounded-xl border border-gray-200 border-dashed">
+                <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No appointments found</h3>
+                <p class="mt-1 text-sm text-gray-500">Try changing the filter or tab.</p>
+            </div>
+        </template>
+        
+        <div class="mt-8 text-right">
+             <button onclick="clearHistory()" class="text-sm text-red-500 hover:text-red-700 underline">
+                 Clear Local Data
+             </button>
+        </div>
+
+    </main>
+
+    <div id="details-modal" class="modal fixed w-full h-full top-0 left-0 flex items-center justify-center z-[100] opacity-0 pointer-events-none">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-60"></div>
+        <div class="modal-content bg-white rounded-lg shadow-xl z-[110] w-11/12 md:max-w-md mx-auto transform -translate-y-10 scale-95">
+            <div class="bg-teal-600 p-4 rounded-t-lg flex justify-between items-center">
+                <h3 class="text-lg font-bold text-white">Appointment Details</h3>
+                <button class="modal-close text-teal-100 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div><p class="text-xs text-gray-500 uppercase font-semibold">Service</p><p id="detail-title" class="text-lg font-bold text-gray-900">--</p></div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><p class="text-xs text-gray-500 uppercase font-semibold">Date</p><p id="detail-date" class="text-gray-800">--</p></div>
+                    <div><p class="text-xs text-gray-500 uppercase font-semibold">Time</p><p id="detail-time" class="text-gray-800">--</p></div>
+                </div>
+                <div><p class="text-xs text-gray-500 uppercase font-semibold">Assigned Staff</p><p id="detail-doctor" class="text-gray-800">--</p></div>
+                <div><p class="text-xs text-gray-500 uppercase font-semibold">Location</p><p id="detail-location" class="text-gray-800">--</p></div>
+                <div><p class="text-xs text-gray-500 uppercase font-semibold">Status</p><span id="detail-status" class="inline-block mt-1 px-2 py-1 text-xs font-semibold rounded-full bg-gray-100">--</span></div>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-b-lg text-right">
+                <button class="modal-close px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let appointments = []; 
+        let currentTab = 'upcoming';
+        let currentStatusFilter = 'all'; // State for the filter
+        const API_BASE_URL = 'http://localhost:8080';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setupHeaderDropdown();
+            setupHidingHeader();
+            setupMobileMenu();
+            setupModals();
+            setupFilter(); // Initialize the filter listener
+            
+            // Load data from DATABASE
+            loadAppointments(); 
+        });
+
+        // --- Setup Filter Listener ---
+        function setupFilter() {
+            const filterSelect = document.getElementById('status-filter');
+            if (filterSelect) {
+                filterSelect.addEventListener('change', (e) => {
+                    currentStatusFilter = e.target.value;
+                    renderAppointments(); // Re-render when dropdown changes
+                });
+            }
+        }
+
+        async function loadAppointments() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/my-appointments`);
+                if (!response.ok) throw new Error("Failed to connect");
+                const dbData = await response.json();
+
+                appointments = dbData.map(app => {
+                    const dateObj = new Date(app.appointment_date);
+                    const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+                    const timeString = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                    const dateString = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+                    return {
+                        id: app.appointment_id, 
+                        title: app.reason || "General Consultation", 
+                        date: dateString,
+                        month: monthNames[dateObj.getMonth()],
+                        day: String(dateObj.getDate()).padStart(2, '0'),
+                        time: timeString,
+                        doctor: "Assigned at Center", 
+                        location: "Barangay Health Center",
+                        status: app.status || "Pending"
+                    };
+                });
+                renderAppointments();
+            } catch (error) {
+                console.error("Error loading appointments:", error);
+                document.getElementById('appointments-container').innerHTML = `<div class="p-8 text-center text-red-500">Error loading data. Server might be down.</div>`;
+            }
+        }
+        
+        window.switchAppTab = function(tabName) {
+            currentTab = tabName;
+            const tabs = ['upcoming', 'history', 'cancelled'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if (t === tabName) {
+                    btn.classList.remove('tab-inactive');
+                    btn.classList.add('tab-active');
+                } else {
+                    btn.classList.remove('tab-active');
+                    btn.classList.add('tab-inactive');
+                }
+            });
+            renderAppointments();
+        }
+
+        function renderAppointments() {
+            const container = document.getElementById('appointments-container');
+            const emptyTemplate = document.getElementById('empty-state-template').innerHTML;
+            container.innerHTML = ''; 
+
+            const filtered = appointments.filter(app => {
+                const statusLower = app.status.toLowerCase();
+                
+                // 1. Tab Logic
+                let matchesTab = false;
+                if (currentTab === 'upcoming') matchesTab = (statusLower === 'confirmed' || statusLower === 'pending' || statusLower === 'approved');
+                else if (currentTab === 'history') matchesTab = (statusLower === 'completed');
+                else if (currentTab === 'cancelled') matchesTab = (statusLower === 'declined' || statusLower === 'cancelled');
+
+                // 2. Filter Logic
+                let matchesFilter = true;
+                if (currentStatusFilter !== 'all') {
+                    matchesFilter = (statusLower === currentStatusFilter);
+                }
+
+                return matchesTab && matchesFilter;
+            });
+            
+            // Sort by Date (newest first)
+            // filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (filtered.length === 0) {
+                container.innerHTML = emptyTemplate;
+                return;
+            }
+
+            filtered.forEach(app => {
+                const statusClass = getStatusClass(app.status);
+                const actionButton = (app.status.toLowerCase() === 'pending' || app.status.toLowerCase() === 'confirmed') 
+                    ? `<button onclick="cancelAppointment(${app.id})" class="text-sm font-medium text-gray-500 hover:text-red-600 transition">Cancel</button>` 
+                    : '';
+
+                const cardHTML = `
+                    <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md transition duration-200">
+                        <div class="p-6 sm:flex sm:items-center sm:justify-between">
+                            <div class="flex gap-5">
+                                <div class="flex flex-col items-center justify-center bg-teal-50 border border-teal-100 rounded-lg w-16 h-16 shrink-0">
+                                    <span class="text-xs font-bold text-teal-600 uppercase tracking-wide">${app.month}</span>
+                                    <span class="text-xl font-bold text-gray-900">${app.day}</span>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-3">
+                                        <h3 class="text-lg font-bold text-gray-900">${app.title}</h3>
+                                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusClass}">${app.status}</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mt-1">${app.doctor} • <span class="font-medium">${app.time}</span></p>
+                                    <div class="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                        ${app.location}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-4 sm:mt-0 flex gap-3 items-center">
+                                ${actionButton}
+                                <button onclick="viewDetails(${app.id})" class="text-sm font-medium bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition">View Details</button>
+                            </div>
+                        </div>
+                    </div>`;
+                container.insertAdjacentHTML('beforeend', cardHTML);
+            });
+        }
+
+        function getStatusClass(status) {
+            switch(status.toLowerCase()) {
+                case 'confirmed': case 'approved': return 'bg-teal-100 text-teal-800 border-teal-200';
+                case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                case 'completed': return 'bg-gray-100 text-gray-800 border-gray-200';
+                case 'cancelled': case 'declined': return 'bg-red-100 text-red-800 border-red-200';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        window.cancelAppointment = async function(id) {
+            if(confirm('Cancel this appointment?')) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/cancel-appointment`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id })
+                    });
+                    const result = await response.json();
+                    if (result.success) { alert("Cancelled."); loadAppointments(); } 
+                    else { alert("Error: " + result.error); }
+                } catch (error) { console.error("Cancel Error:", error); }
+            }
+        }
+
+        window.viewDetails = function(id) {
+            const app = appointments.find(a => a.id === id);
+            if (app) {
+                document.getElementById('detail-title').textContent = app.title;
+                document.getElementById('detail-date').textContent = app.date;
+                document.getElementById('detail-time').textContent = app.time;
+                document.getElementById('detail-doctor').textContent = app.doctor;
+                document.getElementById('detail-location').textContent = app.location;
+                
+                const statusSpan = document.getElementById('detail-status');
+                statusSpan.textContent = app.status;
+                statusSpan.className = `inline-block mt-1 px-2 py-1 text-xs font-semibold rounded-full border ${getStatusClass(app.status)}`;
+                
+                toggleModal(document.getElementById('details-modal'), true);
+            }
+        }
+        
+        function clearHistory() {
+            if(confirm("Clear Local Storage only?")) { localStorage.removeItem('myAppointments'); location.reload(); }
+        }
+
+        window.toggleModal = function(modal, show) {
+            if (!modal) return;
+            const content = modal.querySelector('.modal-content');
+            const body = document.querySelector('body');
+            if (show) {
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                content.classList.remove('-translate-y-10', 'scale-95');
+                body.classList.add('modal-active');
+            } else {
+                modal.classList.add('opacity-0');
+                content.classList.add('-translate-y-10', 'scale-95');
+                setTimeout(() => { modal.classList.add('pointer-events-none'); body.classList.remove('modal-active'); }, 250);
+            }
+        }
+
+        function setupModals() {
+            document.querySelectorAll('.modal-close, .modal-overlay').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    toggleModal(btn.closest('.modal'), false);
+                });
+            });
+            document.querySelectorAll('.open-appointment-modal').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    window.location.href = 'Appointment.html';
+                });
+            });
+        }
+        function setupHeaderDropdown() {
+            const btn = document.getElementById('user-menu-button');
+            const menu = document.getElementById('user-dropdown-menu');
+            if(btn && menu) {
+                btn.addEventListener('click', (e) => { e.stopPropagation(); menu.classList.toggle('hidden'); menu.classList.toggle('opacity-0'); menu.classList.toggle('scale-95'); });
+                window.addEventListener('click', (e) => { if(!btn.contains(e.target)) { menu.classList.add('hidden'); menu.classList.add('opacity-0'); } });
+            }
+        }
+        function setupHidingHeader() { /* ... standard hide logic ... */ }
+        function setupMobileMenu() {
+            document.getElementById('mobile-menu-toggle')?.addEventListener('click', () => { document.getElementById('mobile-menu').classList.toggle('hidden'); });
+        }
+
+        // --- LOGOUT FUNCTION ---
+    function logoutUser() {
+        if(confirm("Are you sure you want to sign out?")) {
+            // 1. Clear any saved session data (if you have any)
+            localStorage.removeItem('userType'); 
+            localStorage.removeItem('isLoggedIn');
+            
+            // 2. Redirect to the Login Page or Home Page
+            window.location.href = "Homee.html"; // Change this to "login.html" if you have one
+        }
+    }
+    </script>
+</body>
+</html>
