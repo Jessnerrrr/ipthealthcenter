@@ -2,6 +2,9 @@ const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const multer = require('multer'); 
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const port = 8080;
@@ -9,15 +12,35 @@ const port = 8080;
 // --- MIDDLEWARE ---
 app.use(cors());
 app.use(bodyParser.json());
+// Allow browser to see uploaded images
+app.use('/uploads', express.static('uploads')); 
 
 // --- DATABASE CONNECTION ---
 const pool = new Pool({
-  user: 'postgres',             // Default user
-  host: 'localhost',            // Localhost
-  database: 'barangayhealthcenter', // <--- UPDATED TO MATCH YOUR SCREENSHOT
-  password: 'samganda',     // ⚠️ REPLACE THIS with your real Postgres password
+  user: 'postgres',
+  host: 'localhost',
+  database: 'barangayhealthcenter',
+  password: 'samganda', // Ensure this matches your pgAdmin password
   port: 5432,
 });
+
+// --- IMAGE UPLOAD CONFIGURATION ---
+const uploadDir = './uploads';
+if (!fs.existsSync(uploadDir)){
+    fs.mkdirSync(uploadDir);
+}
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/')
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage: storage });
+
 
 // --- ROUTES ---
 
@@ -26,11 +49,10 @@ app.get('/', (req, res) => {
   res.send('Server is connected to database: barangayhealthcenter');
 });
 
-// 2. Register New User (Patient)
+// 2. Register New User
 app.post('/register', async (req, res) => {
   const { name, email, password } = req.body;
   try {
-    // Ensure you have a 'users' or 'patients' table created in pgAdmin
     const result = await pool.query(
       'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING *',
       [name, email, password]
@@ -42,10 +64,9 @@ app.post('/register', async (req, res) => {
   }
 });
 
-// 3. Book Appointment (Patient Side)
+// 3. Book Appointment
 app.post('/book-appointment', async (req, res) => {
   const { patient_id, appointment_date, reason } = req.body;
-
   try {
     const query = `
       INSERT INTO appointments (patient_id, appointment_date, reason, status) 
@@ -53,21 +74,17 @@ app.post('/book-appointment', async (req, res) => {
       RETURNING *
     `;
     const result = await pool.query(query, [patient_id, appointment_date, reason]);
-    console.log("New Appointment:", result.rows[0]);
     res.json({ success: true, appointment: result.rows[0] });
-
   } catch (err) {
     console.error("Booking Error:", err.message);
     res.status(500).json({ error: "Server Error" });
   }
 });
 
-// 4. Get My Appointments (Patient History)
+// 4. Get My Appointments
 app.get('/my-appointments', async (req, res) => {
   try {
-    const result = await pool.query(
-      'SELECT * FROM appointments ORDER BY appointment_date DESC'
-    );
+    const result = await pool.query('SELECT * FROM appointments ORDER BY appointment_date DESC');
     res.json(result.rows);
   } catch (err) {
     console.error("Fetch Error:", err.message);
@@ -75,65 +92,9 @@ app.get('/my-appointments', async (req, res) => {
   }
 });
 
-// 5. Get ALL Appointments (Admin Dashboard)
-app.get('/admin/appointments', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'SELECT * FROM appointments ORDER BY appointment_date DESC'
-    );
-    res.json(result.rows);
-  } catch (err) {
-    console.error("Admin Fetch Error:", err.message);
-    res.status(500).send("Server Error");
-  }
-});
-
-// 6. Update Status (Admin Approve/Decline)
-app.post('/admin/update-appointment', async (req, res) => {
-  const { id, status } = req.body; 
-  try {
-    const result = await pool.query(
-      'UPDATE appointments SET status = $1 WHERE appointment_id = $2 RETURNING *',
-      [status, id]
-    );
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Appointment not found" });
-    }
-    console.log(`Appointment ${id} updated to ${status}`);
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error("Update Error:", err.message);
-    res.status(500).send("Server Error");
-  }
-});
-// ... existing routes ...
-
-// 7. Cancel Appointment (Patient Action)
-app.post('/cancel-appointment', async (req, res) => {
-  const { id } = req.body;
-  try {
-    const result = await pool.query(
-      "UPDATE appointments SET status = 'Cancelled' WHERE appointment_id = $1 RETURNING *",
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, error: "Appointment not found" });
-    }
-
-    res.json({ success: true, message: "Appointment cancelled", data: result.rows[0] });
-  } catch (err) {
-    console.error("Cancellation Error:", err.message);
-    res.status(500).json({ success: false, error: "Database error" });
-  }
-});
-
-// ... existing routes ...
-
-// 8. Get User Profile (to load name and photo)
+// 8. Get User Profile (FIXED: Reads separate names and combines them)
 app.get('/get-user-profile', async (req, res) => {
-  const userId = 1; // ⚠️ Hardcoded for now. Later this comes from the login session.
+  const userId = 1; 
   
   try {
     const result = await pool.query('SELECT * FROM users WHERE user_id = $1', [userId]);
@@ -144,14 +105,17 @@ app.get('/get-user-profile', async (req, res) => {
 
     const user = result.rows[0];
     
-    // Send back the user data (including the profile_picture path)
+    // Safely combine the first and last name from the database for the front-end to split
+    const combinedName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+    
     res.json({ 
       success: true, 
       user: {
-        name: user.name || user.first_name + ' ' + user.last_name, // Adjust based on your column names
+        name: combinedName, // Sends combined name
         email: user.email,
-        phone: user.phone || user.contact_number, // Adjust based on your column names
-        profile_picture: user.profile_picture // This is the file path!
+        phone: user.phone || user.contact_number || "", 
+        address: user.address || "",
+        profile_picture: user.profile_picture
       }
     });
 
@@ -160,26 +124,21 @@ app.get('/get-user-profile', async (req, res) => {
     res.status(500).json({ success: false, error: "Server Error" });
   }
 });
-
-// ... existing routes ...
-
-// 9. Update User Text Details (FIXED: Uses 'name' instead of first_name/last_name)
+// 9. Update User Text Details (FIXED: Uses separate columns for names)
 app.post('/update-user-details', async (req, res) => {
   const { userId, firstName, lastName, phone, address } = req.body;
-
-  // Combine them because your DB only has 'name'
-  const fullName = `${firstName} ${lastName}`; 
-
+  
   try {
+    // FIX: Update first_name, last_name, phone, and address separately
     const query = `
       UPDATE users 
-      SET name = $1, phone = $2, address = $3 
-      WHERE user_id = $4 
+      SET first_name = $1, last_name = $2, phone = $3, address = $4 
+      WHERE user_id = $5 
       RETURNING *
     `;
     
-    // We pass fullName instead of firstName/lastName
-    const values = [fullName, phone, address, userId];
+    // Values match the 5 parameters in the query
+    const values = [firstName, lastName, phone, address, userId];
     const result = await pool.query(query, values);
 
     if (result.rows.length === 0) {
@@ -192,6 +151,54 @@ app.post('/update-user-details', async (req, res) => {
     console.error("Update Details Error:", err.message);
     res.status(500).json({ success: false, error: "Database error: " + err.message });
   }
+});
+// 10. Update Profile Picture
+app.post('/update-profile-picture', upload.single('profilePhoto'), async (req, res) => {
+    const { userId } = req.body;
+    
+    if (!req.file) {
+        return res.status(400).json({ success: false, error: "No file uploaded" });
+    }
+
+    const imagePath = req.file.path.replace(/\\/g, "/");
+
+    try {
+        const query = 'UPDATE users SET profile_picture = $1 WHERE user_id = $2 RETURNING *';
+        const result = await pool.query(query, [imagePath, userId]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, error: "User not found" });
+        }
+
+        res.json({ success: true, imagePath: imagePath });
+    } catch (err) {
+        console.error("Image Upload Error:", err.message);
+        res.status(500).json({ success: false, error: "Database error" });
+    }
+});
+// NEW ROUTE: 11. Cancel Appointment
+app.post('/cancel-appointment', async (req, res) => {
+    const { id } = req.body; // Expects the appointment_id
+
+    try {
+        const query = `
+            UPDATE appointments
+            SET status = 'Cancelled' 
+            WHERE appointment_id = $1 
+            RETURNING *
+        `;
+        const result = await pool.query(query, [id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, error: "Appointment not found." });
+        }
+
+        res.json({ success: true, message: "Appointment cancelled." });
+
+    } catch (err) {
+        console.error("Cancellation Error:", err.message);
+        res.status(500).json({ success: false, error: "Database error during cancellation." });
+    }
 });
 // --- START SERVER ---
 app.listen(port, () => {

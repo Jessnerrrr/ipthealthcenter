@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Account Settings - Barangay Health Center</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -214,18 +216,29 @@
                 if(data.success) {
                     const u = data.user;
                     
-                    // FIX: Check for "undefined" string. If found, KEEP THE HTML VALUE (Juan).
+                    // Logic to split the single 'name' column into two inputs (First and Last Name)
                     if(u.name && !u.name.includes('undefined') && u.name !== 'null') {
-                        document.getElementById('input-firstname').value = u.name;
+                        const nameParts = u.name.split(' ').filter(p => p.trim() !== '');
+                        document.getElementById('input-firstname').value = nameParts[0] || '';
+                        document.getElementById('input-lastname').value = nameParts.slice(1).join(' ') || '';
+                        
+                        // Fallback to name if split is messy
+                        if(nameParts.length <= 1) {
+                             document.getElementById('input-firstname').value = u.name;
+                             document.getElementById('input-lastname').value = '';
+                        }
                     }
+
                     if(u.email && !u.email.includes('undefined')) {
                         document.getElementById('input-email').value = u.email;
                         if(document.getElementById('dropdown-email')) document.getElementById('dropdown-email').textContent = u.email;
                         if(document.getElementById('mobile-email')) document.getElementById('mobile-email').textContent = u.email;
                     }
+                    
                     if(u.phone && !u.phone.includes('undefined')) {
                         document.getElementById('input-phone').value = u.phone;
                     }
+                    
                     if(u.address && !u.address.includes('undefined')) {
                         document.getElementById('input-address').value = u.address;
                     }
@@ -253,50 +266,102 @@
             });
         }
 
-        // C. Handle Main "Save Changes" Button Click
+        // C. Handle Main "Save Changes" Button Click (UPDATED WITH SWEETALERT)
         if(generalForm) {
             generalForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
 
-                // 1. Upload Photo if selected
-                if(selectedFile) {
-                    const originalText = mainSaveBtn.innerText;
-                    mainSaveBtn.innerText = "Saving...";
-                    mainSaveBtn.disabled = true;
+                const firstName = document.getElementById('input-firstname').value;
+                const lastName = document.getElementById('input-lastname').value;
+                const phone = document.getElementById('input-phone').value;
+                const address = document.getElementById('input-address').value;
+                
+                mainSaveBtn.innerText = "Saving...";
+                mainSaveBtn.disabled = true;
 
-                    const formData = new FormData();
-                    formData.append('profilePhoto', selectedFile);
-                    formData.append('userId', 1);
+                let overallSuccess = true;
+                let errorMessage = '';
 
-                    try {
-                        const response = await fetch(`${API_BASE_URL}/update-profile-picture`, {
+                try {
+                    // 1. SAVE TEXT DATA (Must happen first)
+                    const textResponse = await fetch(`${API_BASE_URL}/update-user-details`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            userId: 1, 
+                            firstName: firstName, 
+                            lastName: lastName, 
+                            phone: phone, 
+                            address: address 
+                        })
+                    });
+                    
+                    const textResult = await textResponse.json();
+                    
+                    if(!textResult.success) {
+                        overallSuccess = false;
+                        errorMessage = textResult.error || "Text details save failed.";
+                        throw new Error(errorMessage);
+                    }
+
+                    // 2. SAVE IMAGE (Only if selected)
+                    if(selectedFile) {
+                        const formData = new FormData();
+                        formData.append('profilePhoto', selectedFile);
+                        formData.append('userId', 1);
+
+                        const imgResponse = await fetch(`${API_BASE_URL}/update-profile-picture`, {
                             method: 'POST',
                             body: formData
                         });
-                        const result = await response.json();
-
-                        if(result.success) {
-                            const newSrc = `${API_BASE_URL}/${result.imagePath}?t=${new Date().getTime()}`;
+                        const imgResult = await imgResponse.json();
+                        
+                        if(imgResult.success) {
+                            // Force cache refresh in UI
+                            const newSrc = `${API_BASE_URL}/${imgResult.imagePath}?t=${new Date().getTime()}`;
                             document.getElementById('header-profile-img').src = newSrc;
-                            alert("Settings and Profile Photo Saved Successfully!");
+                            document.getElementById('settings-profile-preview').src = newSrc; 
+                            if(document.getElementById('mobile-profile-img')) document.getElementById('mobile-profile-img').src = newSrc;
                         } else {
-                            alert("Error saving photo: " + result.error);
+                            // Image upload failed, but text was saved. Report error without crashing flow.
+                            console.error("Image upload failed:", imgResult.error);
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Partial Save',
+                                text: `Text details saved, but the photo upload failed: ${imgResult.error}.`,
+                            });
                         }
-                    } catch(err) {
-                        console.error("Upload Error:", err);
-                        alert("Connection failed.");
-                    } finally {
-                        mainSaveBtn.innerText = originalText;
-                        mainSaveBtn.disabled = false;
-                        selectedFile = null;
                     }
-                } else {
-                    alert("Settings Saved! (No new photo selected)");
+
+                    // --- SWEETALERT SUCCESS ---
+                    if (overallSuccess) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Saved!',
+                            text: 'Your profile changes have been successfully updated.',
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                    }
+
+                } catch(err) {
+                    console.error("Save Error:", err);
+                    // --- SWEETALERT ERROR ---
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Save Failed',
+                        text: `Could not save changes. Error: ${err.message}. Please ensure your database columns are correct.`,
+                    });
+                } finally {
+                    mainSaveBtn.innerText = "Save Changes";
+                    mainSaveBtn.disabled = false;
+                    selectedFile = null;
                 }
             });
         }
     }
 
+    // function setupBookingForm() { ... } (Keep existing logic)
     function setupBookingForm() {
         const form = document.getElementById('booking-form');
         if (form) {
@@ -307,7 +372,12 @@
                 const time = document.getElementById('time-modal').value; 
 
                 if(service.includes('Select') || !dateVal || !time) {
-                    alert('Please fill in all fields.'); return;
+                    Swal.fire({
+                         icon: 'warning',
+                         title: 'Missing Fields',
+                         text: 'Please fill in all appointment fields.',
+                    }); 
+                    return;
                 }
 
                 try {
@@ -322,18 +392,58 @@
                     });
                     const result = await response.json();
                     if (result.success) {
-                        alert("Appointment booked successfully!");
+                        Swal.fire({
+                             icon: 'success',
+                             title: 'Appointment Booked!',
+                             text: 'Your appointment is pending approval.',
+                             showConfirmButton: false,
+                             timer: 2500
+                        });
                         toggleModal(document.getElementById('appointment-modal'), false);
                         form.reset();
-                    } else { alert("Error: " + result.error); }
-                } catch(error) { console.error("Booking Error:", error); alert("Connection failed."); }
+                    } else { 
+                        Swal.fire({
+                             icon: 'error',
+                             title: 'Booking Failed',
+                             text: 'Error: ' + (result.error || 'Server error.'),
+                        });
+                    }
+                } catch(error) { 
+                    console.error("Booking Error:", error); 
+                    Swal.fire({
+                         icon: 'error',
+                         title: 'Connection Failed',
+                         text: 'Could not connect to the server to book the appointment.',
+                    });
+                }
             });
         }
     }
 
+
+    // --- LOGOUT FUNCTION (Uses SweetAlert2) ---
     function logoutUser() {
-        if(confirm("Sign out?")) { localStorage.clear(); window.location.href = "Homee.html"; }
+        Swal.fire({
+            title: 'Sign Out?',
+            text: "You will be redirected to the home page.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#047857', // teal-600
+            cancelButtonColor: '#ef4444', // red-500
+            confirmButtonText: 'Yes, Sign Out'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // 1. Clear any saved session data
+                localStorage.removeItem('userType'); 
+                localStorage.removeItem('isLoggedIn');
+                
+                // 2. Redirect
+                window.location.href = "Homee.html"; 
+            }
+        });
     }
+
+    // --- Existing Helper Functions (No changes needed) ---
     function switchTab(tabName) {
         document.querySelectorAll('.settings-content').forEach(el => el.classList.add('hidden'));
         document.querySelectorAll('.tab-btn').forEach(btn => {

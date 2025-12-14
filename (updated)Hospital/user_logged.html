@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Barangay Bahay Toro Health Center</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -73,24 +75,24 @@
                 </button>
 
                 <div class="relative hidden lg:block">
-                    <button type="button" id="user-menu-button" class="flex items-center justify-center rounded-full bg-teal-100 p-1 hover:ring-2 hover:ring-teal-500 transition focus:outline-none">
-                        <span class="sr-only">Open user menu</span>
-                        <img class="h-9 w-9 rounded-full object-cover" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="User Profile">
-                    </button>
+                   <button type="button" id="user-menu-button" class="flex items-center justify-center rounded-full bg-teal-100 p-1 hover:ring-2 hover:ring-teal-500 transition focus:outline-none">
+    <span class="sr-only">Open user menu</span>
+    <img id="header-profile-img" class="h-9 w-9 rounded-full object-cover" src="https://placehold.co/100x100/teal/white?text=User" alt="User Profile">
+</button>
 
-                    <div id="user-dropdown-menu" class="hidden absolute right-0 z-50 mt-2 w-56 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none transform opacity-0 scale-95 transition ease-out duration-100">
-                        <div class="px-4 py-3 border-b border-gray-100">
-                            <p class="text-sm text-gray-500">Signed in as</p>
-                            <p class="text-sm font-bold text-gray-900 truncate">juan.delacruz@email.com</p>
-                        <a href="profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700">My Profile</a>
-                        
-                        <a href="my_appointments.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700">My Appointments</a>
-                        
-                        <a href="settings.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700">Settings</a>
-                        <div class="border-t border-gray-100 my-1"></div>
-                        <a href="#" onclick="logoutUser()" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md font-medium">Sign Out</a>
-                    </div>
-                </div>
+<div id="user-dropdown-menu" class="hidden absolute right-0 z-50 mt-2 w-56 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none transform opacity-0 scale-95 transition ease-out duration-100">
+    <div class="px-4 py-3 border-b border-gray-100">
+        <p class="text-sm text-gray-500">Signed in as</p>
+        <p id="dropdown-email" class="text-sm font-bold text-gray-900 truncate">juan.delacruz@email.com</p>
+    </div>
+    <a href="profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700">My Profile</a>
+    
+    <a href="my_appointments.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700">My Appointments</a>
+    
+    <a href="settings.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-teal-50 hover:text-teal-700">Settings</a>
+    <div class="border-t border-gray-100 my-1"></div>
+    <a href="#" onclick="logoutUser()" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md font-medium">Sign Out</a>
+</div>
 
                 <button id="mobile-menu-toggle" class="lg:hidden text-gray-700 hover:text-teal-600 p-2">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -481,221 +483,206 @@
 
     <!-- JavaScript -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Setup Hero Slideshow
-            setupHeroSlideshow();
+    const API_BASE_URL = 'http://localhost:8080';
 
-            // Setup Carousels
-            setupCarousel(
-                document.querySelector('#team-carousel-container'),
-                document.querySelector('.carousel-prev-team'),
-                document.querySelector('.carousel-next-team')
-            );
-            setupCarousel(
-                document.querySelector('#medical-carousel-container'),
-                document.querySelector('.carousel-prev-medical'),
-                document.querySelector('.carousel-next-medical')
-            );
+    document.addEventListener('DOMContentLoaded', function() {
+        // Setup all UI components
+        setupHeroSlideshow();
+        setupCarousel(
+            document.querySelector('#team-carousel-container'),
+            document.querySelector('.carousel-prev-team'),
+            document.querySelector('.carousel-next-team')
+        );
+        setupCarousel(
+            document.querySelector('#medical-carousel-container'),
+            document.querySelector('.carousel-prev-medical'),
+            document.querySelector('.carousel-next-medical')
+        );
+        setupHidingHeader();
+        setupMobileMenu();
+        setupHeaderDropdown();
+        setupBookingRedirect();
+        
+        // CRITICAL: Call this function to load the dynamic profile data and image on page load
+        syncProfileData(); 
+    });
 
-            // Setup Hiding Header & Mobile Menu
-            setupHidingHeader();
-            setupMobileMenu();
-
-            // --- Modal Logic ---
-            const body = document.querySelector('body');
-
-            // Define all modals and their trigger buttons
-            const modals = [
-                { id: 'appointment-modal', openClass: '.open-appointment-modal' },
-                { id: 'doctor-modal', openClass: '.open-doctor-modal' },
-                { id: 'emergency-modal', openClass: '.open-emergency-modal' },
-            ];
-
-            modals.forEach(m => {
-                const modal = document.getElementById(m.id);
-                if (modal) {
-                    const openButtons = document.querySelectorAll(m.openClass);
-                    const closeButtons = modal.querySelectorAll('.modal-close, .modal-overlay');
-
-                    openButtons.forEach(button => {
-                        button.addEventListener('click', (e) => {
-                            e.preventDefault();
-                            toggleModal(modal, true);
-                            if (m.id === 'doctor-modal') {
-                                // Populate logic if needed
-                                document.getElementById('doctor-modal-img').src = button.dataset.img || 'https://placehold.co/300x300';
-                                document.getElementById('doctor-modal-name').textContent = button.dataset.name;
-                                document.getElementById('doctor-modal-role').textContent = button.dataset.role;
-                                document.getElementById('doctor-modal-bio').textContent = button.dataset.bio;
-                            }
-                        });
-                    });
-                    closeButtons.forEach(button => {
-                        button.addEventListener('click', (e) => {
-                            e.preventDefault();
-                            toggleModal(modal, false);
-                        });
-                    });
-                }
-            });
-
-            // General Modal Toggle Function
-            function toggleModal(modal, show) {
-                if (!modal) return;
-                
-                const modalContent = modal.querySelector('.modal-content');
-                if (!modalContent) return;
-
-                if (show) {
-                    modal.classList.remove('opacity-0', 'pointer-events-none');
-                    modalContent.classList.remove('-translate-y-10', 'scale-95');
-                    body.classList.add('modal-active');
-                } else {
-                    modal.classList.add('opacity-0');
-                    modalContent.classList.add('-translate-y-10', 'scale-95');
-                    setTimeout(() => {
-                        modal.classList.add('pointer-events-none');
-                        // Only remove modal-active if no other modals are open
-                        if (document.querySelectorAll('.modal:not(.opacity-0)').length === 0) {
-                            body.classList.remove('modal-active');
-                        }
-                    }, 250); // Match transition duration
-                }
-            }
-
-            // Close modals with Escape key
-            window.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    document.querySelectorAll('.modal').forEach(modal => {
-                        toggleModal(modal, false);
-                    });
-                }
-            });
+    // --- CRITICAL FUNCTION: Syncs data from the server ---
+    async function syncProfileData() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/get-user-profile`);
+            const data = await response.json();
             
-            setupHeaderDropdown();
-            setupBookingRedirect(); // Initialize booking redirect
-        });
-
-        // --- NEW: Handle Booking Form Submit ---
-        function setupBookingRedirect() {
-            const form = document.getElementById('booking-form');
-            if (form) {
-                form.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    
-                    const btn = form.querySelector('button[type="submit"]');
-                    const originalText = btn.textContent;
-                    
-                    // Show Loading
-                    btn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Booking...';
-                    btn.disabled = true;
-
-                    setTimeout(() => {
-                        // Redirect to Appointments Page
-                        window.location.href = 'appointments.html';
-                    }, 800);
-                });
+            if (!data.success) {
+                 console.error("Failed to fetch user data:", data.error);
+                 return;
             }
-        }
 
-        // --- Existing Helper Functions ---
-        function setupHeroSlideshow() {
-            const slides = document.querySelectorAll('.hero-slide');
-            if (slides.length === 0) return;
-            let currentSlide = 0;
-            setInterval(() => {
-                slides[currentSlide].classList.remove('opacity-100');
-                slides[currentSlide].classList.add('opacity-0');
-                currentSlide = (currentSlide + 1) % slides.length;
-                slides[currentSlide].classList.remove('opacity-0');
-                slides[currentSlide].classList.add('opacity-100');
-            }, 3000);
-        }
+            const u = data.user;
+            const timestamp = new Date().getTime(); 
+            // Use placeholder if no picture is set
+            const newSrc = u.profile_picture ? `${API_BASE_URL}/${u.profile_picture}?t=${timestamp}` : 'https://placehold.co/100x100/teal/white?text=User';
 
-        function setupCarousel(container, prevButton, nextButton) {
-            if (!container) return;
-            const rail = container.querySelector('.carousel-rail');
-            const card = rail.querySelector('div[class*="flex-shrink-0"]');
-            if (!rail || !card) return;
+            // 1. Update Profile Image (Cache Fix)
+            const headerImg = document.getElementById('header-profile-img');
+            // The mobile image tag doesn't have an ID in your HTML, so we target it by its parent structure.
+            const mobileImg = document.querySelector('#mobile-menu img'); 
             
-            const getScrollAmount = () => {
-                const gap = parseFloat(window.getComputedStyle(rail).gap) || 24;
-                return card.offsetWidth + gap;
-            };
-
-            prevButton.addEventListener('click', () => { rail.scrollBy({ left: -getScrollAmount(), behavior: 'smooth' }); });
-            nextButton.addEventListener('click', () => { rail.scrollBy({ left: getScrollAmount(), behavior: 'smooth' }); });
-        }
-
-        function setupHidingHeader() {
-            const header = document.getElementById('main-header');
-            if (!header) return;
-            let lastScrollTop = 0;
-            window.addEventListener('scroll', function() {
-                let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                if (scrollTop > lastScrollTop && scrollTop > header.offsetHeight) {
-                    header.style.top = `-${header.offsetHeight}px`;
-                } else {
-                    header.style.top = '0';
-                }
-                lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
-            }, false);
-        }
-
-        function setupMobileMenu() {
-            const menuToggle = document.getElementById('mobile-menu-toggle');
-            const mobileMenu = document.getElementById('mobile-menu');
-            if (menuToggle && mobileMenu) {
-                menuToggle.addEventListener('click', () => {
-                    const isHidden = mobileMenu.classList.toggle('hidden');
-                    const icon = menuToggle.querySelector('path');
-                    if(icon) icon.setAttribute('d', isHidden ? 'M4 6h16M4 12h16m-7 6h7' : 'M6 18L18 6M6 6l12 12');
-                });
-            }
-        }
-
-        function setupHeaderDropdown() {
-            const userMenuBtn = document.getElementById('user-menu-button');
-            const userDropdown = document.getElementById('user-dropdown-menu');
-            if(userMenuBtn && userDropdown) {
-                userMenuBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const isHidden = userDropdown.classList.contains('hidden');
-                    if (isHidden) {
-                        userDropdown.classList.remove('hidden');
-                        setTimeout(() => {
-                            userDropdown.classList.remove('opacity-0', 'scale-95');
-                            userDropdown.classList.add('opacity-100', 'scale-100');
-                        }, 20);
-                    } else {
-                        closeUserDropdown();
-                    }
-                });
-                window.addEventListener('click', (e) => {
-                    if (!userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
-                        closeUserDropdown();
-                    }
-                });
-            }
-            function closeUserDropdown() {
-                if(!userDropdown) return;
-                userDropdown.classList.remove('opacity-100', 'scale-100');
-                userDropdown.classList.add('opacity-0', 'scale-95');
-                setTimeout(() => { userDropdown.classList.add('hidden'); }, 100);
-            }
-        }
-
-        // --- LOGOUT FUNCTION ---
-    function logoutUser() {
-        if(confirm("Are you sure you want to sign out?")) {
-            // 1. Clear any saved session data (if you have any)
-            localStorage.removeItem('userType'); 
-            localStorage.removeItem('isLoggedIn');
+            if (headerImg) headerImg.src = newSrc;
+            if (mobileImg) mobileImg.src = newSrc;
             
-            // 2. Redirect to the Login Page or Home Page
-            window.location.href = "Homee.html"; // Change this to "login.html" if you have one
+            // 2. Update Name and Email in Header/Dropdown
+            // NOTE: The dropdown email element in your HTML currently doesn't have an ID, 
+            // but the <p> tag inside the dropdown does (dropdown-email).
+            const dropdownEmail = document.getElementById('dropdown-email'); 
+            const mobileEmail = document.querySelector('#mobile-menu p.text-xs');
+            const mobileName = document.querySelector('#mobile-menu p.text-sm.font-bold');
+            const welcomeNameElement = document.querySelector('.flex-col.justify-center h1.text-3xl');
+
+            const fullName = u.name || 'Juan Dela Cruz';
+            const firstName = fullName.split(' ')[0] || 'Resident';
+
+            if (dropdownEmail) dropdownEmail.textContent = u.email || 'juan.delacruz@email.com';
+            if (mobileEmail) mobileEmail.textContent = u.email || 'juan.delacruz@email.com';
+            if (mobileName) mobileName.textContent = fullName;
+            
+            // Update the hero welcome message dynamically
+            if (welcomeNameElement) {
+                 welcomeNameElement.textContent = `Welcome back, ${firstName}!`;
+            }
+
+        } catch (error) {
+            console.error("Failed to sync profile data:", error);
         }
     }
-    </script>
+    // --- END NEW CRITICAL FUNCTION ---
+
+    // --- NEW: LOGOUT FUNCTION (Uses SweetAlert2) ---
+    function logoutUser() {
+        Swal.fire({
+            title: 'Sign Out?',
+            text: "You will be redirected to the home page.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#047857', // teal-600
+            cancelButtonColor: '#ef4444', // red-500
+            confirmButtonText: 'Yes, Sign Out'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // 1. Clear any saved session data
+                localStorage.removeItem('userType'); 
+                localStorage.removeItem('isLoggedIn');
+                
+                // 2. Redirect
+                window.location.href = "Homee.html"; 
+            }
+        });
+    }
+
+    // --- Existing Helper Functions (Remaining functions kept intact) ---
+    
+    function setupHeroSlideshow() {
+        const slides = document.querySelectorAll('.hero-slide');
+        if (slides.length === 0) return;
+        let currentSlide = 0;
+        setInterval(() => {
+            slides[currentSlide].classList.remove('opacity-100');
+            slides[currentSlide].classList.add('opacity-0');
+            currentSlide = (currentSlide + 1) % slides.length;
+            slides[currentSlide].classList.remove('opacity-0');
+            slides[currentSlide].classList.add('opacity-100');
+        }, 3000);
+    }
+
+    function setupCarousel(container, prevButton, nextButton) {
+        if (!container) return;
+        const rail = container.querySelector('.carousel-rail');
+        const card = rail.querySelector('div[class*="flex-shrink-0"]');
+        if (!rail || !card) return;
+        
+        const getScrollAmount = () => {
+            const gap = parseFloat(window.getComputedStyle(rail).gap) || 24;
+            return card.offsetWidth + gap;
+        };
+
+        prevButton.addEventListener('click', () => { rail.scrollBy({ left: -getScrollAmount(), behavior: 'smooth' }); });
+        nextButton.addEventListener('click', () => { rail.scrollBy({ left: getScrollAmount(), behavior: 'smooth' }); });
+    }
+
+    function setupHidingHeader() {
+        const header = document.getElementById('main-header');
+        if (!header) return;
+        let lastScrollTop = 0;
+        window.addEventListener('scroll', function() {
+            let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            if (scrollTop > lastScrollTop && scrollTop > header.offsetHeight) {
+                header.style.top = `-${header.offsetHeight}px`;
+            } else {
+                header.style.top = '0';
+            }
+            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+        }, false);
+    }
+
+    function setupMobileMenu() {
+        const menuToggle = document.getElementById('mobile-menu-toggle');
+        const mobileMenu = document.getElementById('mobile-menu');
+        if (menuToggle && mobileMenu) {
+            menuToggle.addEventListener('click', () => {
+                const isHidden = mobileMenu.classList.toggle('hidden');
+                const icon = menuToggle.querySelector('path');
+                if(icon) icon.setAttribute('d', isHidden ? 'M4 6h16M4 12h16m-7 6h7' : 'M6 18L18 6M6 6l12 12');
+            });
+        }
+    }
+
+    function setupHeaderDropdown() {
+        const userMenuBtn = document.getElementById('user-menu-button');
+        const userDropdown = document.getElementById('user-dropdown-menu');
+        if(userMenuBtn && userDropdown) {
+            userMenuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isHidden = userDropdown.classList.contains('hidden');
+                if (isHidden) {
+                    userDropdown.classList.remove('hidden');
+                    setTimeout(() => {
+                        userDropdown.classList.remove('opacity-0', 'scale-95');
+                        userDropdown.classList.add('opacity-100', 'scale-100');
+                    }, 20);
+                } else {
+                    closeUserDropdown();
+                }
+            });
+            window.addEventListener('click', (e) => {
+                if (!userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
+                    closeUserDropdown();
+                }
+            });
+        }
+        function closeUserDropdown() {
+            if(!userDropdown) return;
+            userDropdown.classList.remove('opacity-100', 'scale-100');
+            userDropdown.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => { userDropdown.classList.add('hidden'); }, 100);
+        }
+    }
+
+    function setupBookingRedirect() {
+        const form = document.getElementById('booking-form');
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const btn = form.querySelector('button[type="submit"]');
+                btn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Booking...';
+                btn.disabled = true;
+
+                // Simulate booking logic then redirect
+                setTimeout(() => {
+                    window.location.href = 'appointments.html';
+                }, 800);
+            });
+        }
+    }
+</script>
 </body>
 </html>
